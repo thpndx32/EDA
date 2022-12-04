@@ -99,7 +99,8 @@ int main(int argc, char *argv[]) {
   }
 
   int stop;
-  std::cin >> stop;//ingresar un valor para detener todo el proceso
+  std::cin >> stop;//ingresar un valor para detener todo el proceso, cuando se detiene por este metodo y no Ctrl+c en las ultimas impresiones se encuentran multiples
+                  //datos basura, al hacerlo con Ctrl+c se puede encontrar a lo mucho un par de datos basura
 
   return 0;
 }
