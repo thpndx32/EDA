@@ -6,32 +6,28 @@
 #include <sstream>
 #include <thread>
 using namespace std;
-mutex mtx;
-mutex mtx_c;
+mutex mtx;//mutex para output
 template <typename T>
 class ConcurrentQueue {
  public:
   void push(const T &data) { 
-    //queue_mutex_.lock();
+    //queue_mutex_.lock(); // se puede activar estos locks pero acabaria convirtiendo el proceso en lineal
     queue_.push(data);
     //queue_mutex_.unlock();
      }
 
   T pop() {
-    queue_mutex_.lock();
     T result = queue_.front();
     queue_.pop();
-    queue_mutex_.unlock();
     return result;
   }
 
   int size() const {
     return queue_.size();
   }
-
+  std::mutex queue_mutex_;
  private:
   std::queue<T> queue_;
-  std::mutex queue_mutex_;
 };
 
 class Producer {
@@ -45,7 +41,7 @@ class Producer {
       std::stringstream stream;
       stream<<data++<< " Producer: " << id_ ;
       queue_->push(stream.str());
-      mtx.lock();
+      mtx.lock();//mutex para que lo que se imprime este ordenado
       cout << "Producer: " << id_ << " Data: " << data-1 <<" QUEUE_SIZE: " << queue_->size()<< std::endl;
       mtx.unlock();
     }
@@ -63,15 +59,15 @@ class Consumer {
 
   void operator()() {
     while (true) {
-      if (queue_->size()>0&&mtx_c.try_lock()) {
+      if (queue_->size()>0&&queue_->queue_mutex_.try_lock()) {//se tiene que verificar que haya al menos un elemento y que no haya otro thread realizando una operacion
       std::stringstream stream;
       stream << "Consumer: " << id_ << " Data: " << queue_->pop().c_str();
-      mtx_c.unlock();
-      mtx.lock();
+      queue_->queue_mutex_.unlock();
+      mtx.lock();//mutex para que lo que se imprime este ordenado
       std::cout << stream.str()<< " QUEUE_SIZE: " << queue_->size()<<endl;
       mtx.unlock();}
       else {
-        this_thread::sleep_for(std::chrono::milliseconds(10));
+        this_thread::sleep_for(std::chrono::milliseconds(10));// si no hay mas elementos en la cola esperar por 10 milisegundos
       }
     }
   }
@@ -103,8 +99,7 @@ int main(int argc, char *argv[]) {
   }
 
   int stop;
-  std::cin >> stop;
-  // join
+  std::cin >> stop;//ingresar un valor para detener todo el proceso
 
   return 0;
 }
